@@ -1,31 +1,32 @@
 library community.livecode.renegadesystems.rsIsValid
 
-	use com.livecode.engine
+use com.livecode.engine
 
-	metadata title is "rsIsValid"
-	metadata author is "Steve MacLean"
-	metadata version is "0.1.0"
+metadata title is "rsIsValid"
+metadata author is "Steve MacLean"
+metadata version is "0.1.0"
 
-	public handler rsIsValidEmail (in pEmail as String) returns String
-		variable tMatch as String
-		variable tScript as String
-		variable tResult as String
-		variable tRegex as String
+public handler rsIsValidEmail (in pEmail as String) returns String
+	variable tMatch as String
+	variable tScript as String
+	variable tResult as String
+	variable tRegex as String
 
-		put "^[A-Z0-9._%+-]{1,64}@(?:[A-Z0-9-]{1,63}\\.){1,125}[A-Z]{2,63}$" into tRegex
-		put "filter " & pEmail & " with regex pattern " & tRegex & " into tMatch" after tScript
+	put "^[A-Z0-9._%+-]{1,64}@(?:[A-Z0-9-]{1,63}\\.){1,125}[A-Z]{2,63}$" into tRegex
+	put "filter " & pEmail & " with regex pattern " & tRegex & " into tMatch" after tScript
 
-		-- Use 'execute script' for access to regular expressions.
-		execute script tScript
-		put the result into tMatch
+	-- Use 'execute script' for access to regular expressions.
+	execute script tScript
+	put the result into tMatch
 
-		-- Check result
-		if tMatch is empty then
-	  		put "Not Valid" into tResult
-  		else
-	  		put "Valid" into tResult
-  		end if
+	-- Check result
+	if tMatch is empty then
+	  	put "Not Valid" into tResult
+  	else
+	 	put "Valid" into tResult
+  	end if
 
-  		return tResult
+  	return tResult
 	end handler
+	
 end library
