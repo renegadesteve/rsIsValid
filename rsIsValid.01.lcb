@@ -6,14 +6,16 @@ metadata title is "rsIsValid"
 metadata author is "Steve MacLean"
 metadata version is "0.1.0"
 
-public handler rsIsValidEmail (in pEmail as String) returns String
+
+
+public handler rsIsValidEmail (in pEmail as String) returns Boolean
 	variable tMatch as String
 	variable tScript as String
-	variable tResult as String
+	variable tResult as Boolean
 	variable tRegex as String
 
 	put "^[A-Z0-9._%+-]{1,64}@(?:[A-Z0-9-]{1,63}\\.){1,125}[A-Z]{2,63}$" into tRegex
-	put "filter " & pEmail & " with regex pattern " & tRegex & " into tMatch" after tScript
+	put "filter \q" & pEmail & "\q with regex pattern \q" & tRegex & "\q into tMatch;return tMatch" into tScript
 
 	-- Use 'execute script' for access to regular expressions.
 	execute script tScript
@@ -21,12 +23,12 @@ public handler rsIsValidEmail (in pEmail as String) returns String
 
 	-- Check result
 	if tMatch is empty then
-	  	put "Not Valid" into tResult
+	  	put false into tResult
   	else
-	 	put "Valid" into tResult
+	 	put true into tResult
   	end if
 
   	return tResult
 	end handler
-	
+
 end library

@@ -9,5 +9,5 @@
   <requires name="com.livecode.string"/>
   <requires name="com.livecode.engine"/>
   <requires name="com.livecode.type"/>
-  <handler name="rsIsValidEmail" parameters="in string" return="string"/>
+  <handler name="rsIsValidEmail" parameters="in string" return="boolean"/>
 </package>

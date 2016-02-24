@@ -3,5 +3,5 @@ import module community.livecode.renegadesystems.rsIsValid
   use com.livecode.string
   use com.livecode.engine
   use com.livecode.type
-  handler rsIsValidEmail(in pEmail as String) returns String
+  handler rsIsValidEmail(in pEmail as String) returns Boolean
 end module
