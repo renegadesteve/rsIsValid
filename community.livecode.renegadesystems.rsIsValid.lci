@@ -1,0 +1,20 @@
+import module community.livecode.renegadesystems.rsIsValid
+  use com.livecode.binary
+  use com.livecode.string
+  use com.livecode.engine
+  use com.livecode.type
+  use com.livecode.char
+  use com.livecode.arithmetic
+  use com.livecode.list
+  use com.livecode.logic
+  handler rsIsValidCC(in pCreditCard as String) returns Boolean
+  handler rsIsValidEmail(in pCreditCard as String) returns Boolean
+  handler rsIsValidRange(in pNumber as any, in pMin as any, in pMax as any) returns Boolean
+  handler rsIsValidSQLDate(in pCreditCard as String) returns Boolean
+  handler rsIsValidSSN(in pCreditCard as String) returns Boolean
+  handler rsIsValidUSPhone(in pCreditCard as String) returns Boolean
+  handler rsIsValidURL(in pCreditCard as String) returns Boolean
+  handler rsIsValidUUID(in pCreditCard as String) returns Boolean
+  handler rsIsValidUSDate(in pCreditCard as String) returns Boolean
+  handler rsIsValidUSZip(in pCreditCard as String) returns Boolean
+end module

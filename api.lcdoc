@@ -1,0 +1,208 @@
+Library: community.livecode.renegadesystems.rsIsValid
+
+Type: library
+
+Description: This library consists of functions to validate data against different formats.
+
+
+Name: rsIsValidRange
+
+Type: handler
+
+Syntax: rsIsValidRange(<pNumber>,<pMin>,<pMax>)
+
+Summary:
+Summary: validates the input as a number inside the min and max range provided.
+Parameters:
+pNumber: the number to validated against the min and max of the range.
+pMin: the minimum number of the range to validate against.
+pMax: the maximum number of the range to validate against.
+# rsIsValidRange
+Description:
+Returns either the boolean "true" if the number is within the range provided or the boolean "false" if it is not.
+
+
+
+Name: rsIsValidSQLDate
+
+Type: handler
+
+Syntax: rsIsValidSQLDate(<pSQLDate>)
+
+Summary:
+Summary: validates the input as US Social Security Number. Doesn't check if the number is real or not.
+Parameters:
+pNumber: the number to validated against. Can include dashes.
+# rsIsValidSSN
+Description:
+Returns either the boolean "true" if the SSN is valid or the boolean "false" if it is not.
+Regex Pattern from http://www.codeproject.com/Articles/651609/Validating-Social-Security-Numbers-through-Regular
+Will check for:
+Contains all zeroes in any specific group (ie 000-##-####, ###-00-####, or ###-##-0000)
+Begins with ‚Äô666‚Ä≤
+Begins with any value from ‚Äô900-999‚Ä≤
+Is equal to ‚Äô078-05-1120‚Ä≤  (due to the Woolworth‚Äôs Wallet Fiasco)
+Is equal to ‚Äô219-09-9999‚Ä≤ (appeared in an advertisement for the Social Security Administration)
+and :
+Contains all matching values (ie 000-00-0000, 111-11-1111, 222-22-2222, etc.)
+Contains all incrementing values (ie 123-45-6789)
+The US Social Security Administration has a validation service available at:
+ https://www.ssa.gov/employer/ssnv.htm?__utma=230172574.1965714354.1377091935.1378827786.1378827801.4&__utmb=230172574.3.9.1378827805567&__utmc=230172574&__utmx=-&__utmz=230172574.1378822344.2.2.utmcsr=en.wikipedia.org%7Cutmccn=(referral)%7Cutmcmd=referral%7Cutmcct=/wiki/Social_Security_number&__utmv=-&__utmk=17956090
+
+
+
+Name: rsIsValidCC
+
+Type: handler
+
+Syntax: rsIsValidCC(<pCreditCard>)
+
+Summary: validates the input as a credit card number of Visa, MasterCard, American Express, Discover Card, Diners Club or JCB, then checks to see if it conforms to the mod 10 algorithm.
+
+Parameters: 
+
+pCreditCard:
+data to be validated.
+# rsIsValidCC
+
+Description:
+Returns either the boolean "true" if the credit card is valid or the boolean "false" if it is not. First check the cc number to match with a valid issuer,
+then check the checksum to validate the number
+
+
+
+Name: rsIsValidSSN
+
+Type: handler
+
+Syntax: rsIsValidSSN(<pSSNNumber>)
+
+Summary:
+Summary: validates the input as US Social Security Number. Doesn't check if the number is real or not.
+Parameters:
+pNumber: the number to validated against. Can include dashes.
+# rsIsValidSSN
+Description:
+Returns either the boolean "true" if the SSN is valid or the boolean "false" if it is not.
+Function removes any hyphens and tests just the number.
+Regex Pattern from http://www.codeproject.com/Articles/651609/Validating-Social-Security-Numbers-through-Regular
+   Will check for:
+   Contains all zeroes in any specific group (ie 000-##-####, ###-00-####, or ###-##-0000)
+   Begins with ‚Äô666‚Ä≤
+   Begins with any value from ‚Äô900-999‚Ä≤
+   Is equal to ‚Äô078-05-1120‚Ä≤  (due to the Woolworth‚Äôs Wallet Fiasco)
+   Is equal to ‚Äô219-09-9999‚Ä≤ (appeared in an advertisement for the Social Security Administration)
+
+and:
+   Contains all matching values (ie 000-00-0000, 111-11-1111, 222-22-2222, etc.)
+   Contains all incrementing values (ie 123-45-6789)
+   The US Social Security Administration has a validation service available at:
+
+https: //www.ssa.gov/employer/ssnv.htm?__utma=230172574.1965714354.1377091935.1378827786.1378827801.4&__utmb=230172574.3.9.1378827805567&__utmc=230172574&__utmx=-&__utmz=230172574.1378822344.2.2.utmcsr=en.wikipedia.org%7Cutmccn=(referral)%7Cutmcmd=referral%7Cutmcct=/wiki/Social_Security_number&__utmv=-&__utmk=17956090
+
+
+
+
+Name: rsIsValidURL
+
+Type: handler
+
+Syntax: rsIsValidURL(<pURL>)
+
+Summary:
+	Summary: validates the input as a URL
+	pPURL: data to be validated.
+	# rsIsValidURL
+	Description:
+	Checks if value is an http, https, ftp, mailto, or news URL. Returns true if the value is or false otherwise.
+	Regex Pattern from http://www.regexlib.net/REDetails.aspx?regexp_id=607
+
+
+
+Name: rsIsValidEmail
+
+Type: handler
+
+Syntax: rsIsValidEmail(<pEmail>)
+
+Summary: validates the input as an email address.
+
+pEmail:
+data to be validated.
+# rsIsValidEmail
+
+Description:
+Returns either the boolean "true" if the email is valid or the boolean "false" if it is not.
+Regex Pattern from http://www.regular-expressions.info/email.html
+
+
+
+Name: rsIsValidUSPhone
+
+Type: handler
+
+Syntax: rsIsValidUSPhone(<pPhone>)
+
+Summary:
+Summary: validates the input as a US telephone number
+pPhone: data to be validated.
+# rsIsValidUSPhone
+Description:
+Returns either the boolean "true" if the phone number is valid or the boolean "false" if it is not.
+Regex Pattern from http://www.regexlib.net/REDetails.aspx?regexp_id=607
+   This regular expression for US phone numbers conforms to NANP A-digit
+   and D-digit requirments (ANN-DNN-NNNN). Area Codes 001-199 are not permitted; Central Office Codes 001-199 are not permitted.
+   Format validation accepts 10-digits without delimiters, optional parens on area code, and optional spaces or dashes between area code, central office code and station code.
+   Acceptable formats include 2225551212, 222 555 1212, 222-555-1212, (222) 555 1212, (222) 555-1212, etc.
+
+
+
+Name: rsIsValidUSDate
+
+Type: handler
+
+Syntax: rsIsValidUSDate(<pUSDate>)
+
+Summary:
+	  Summary: validates the input as a US formated date
+	  pDate: data to be validated.
+	  # rsIsValidUSDate
+	  Description:
+	  Checks to see if the value is a US Date of the format mm/dd/yyyy (optional hh:MM(:ss) Datetime for all AD years, including leap years. Returns true if the value is or false otherwise.
+	  Regex Pattern from http://www.regexlib.net/REDetails.aspx?regexp_id=607
+
+
+
+Name: rsIsValidUSZip
+
+Type: handler
+
+Syntax: rsIsValidUSZip(<pUSZip>)
+
+Summary:
+	Summary: validates the input as a US formated zip code
+	pUSZip: data to be validated.
+	# rsIsValidUSZip
+	Description:
+	Checks to see if the value is a US 5- or 9-digit format ZIP code of the format xxxxx(-xxxx). Returns true if the value is or false otherwise.
+	Regex Pattern from http://www.regexlib.net/REDetails.aspx?regexp_id=607
+
+
+
+Name: rsIsValidUUID
+
+Type: handler
+
+Syntax: rsIsValidUUID(<pUUID>)
+
+Summary:
+	Summary: validates the input as a UUID
+	pPUUID: data to be validated.
+	# rsIsValidUUID
+	Description:
+	Checks if value is a Universally Unique Identifier of the form "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" where ‚Äò X‚Äô is a hexadecimal. Returns true if the value is or false otherwise.
+	Regex Pattern from http://www.regexlib.net/REDetails.aspx?regexp_id=607
+	This regular expression Matches a Version 4 UUID as described here http://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_.28random.29
+
+
+

@@ -1,0 +1,565 @@
+--The MIT License (MIT)
+
+--Copyright (c) 2016 Stephen MacLean
+-- Regex attribution in the individual function except for URL test function.
+-- URL test function contains the "Regular Expression for URL validation"
+
+--Permission is hereby granted, free of charge, to any person obtaining a copy
+--of this software and associated documentation files (the "Software"), to deal
+--in the Software without restriction, including without limitation the rights
+--to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+--copies of the Software, and to permit persons to whom the Software is
+--furnished to do so, subject to the following conditions:
+
+--The above copyright notice and this permission notice shall be included in all
+--copies or substantial portions of the Software.
+
+--THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+--IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+--FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+--AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+--LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+--OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+--SOFTWARE.
+
+-- //
+-- // Regular Expression for URL validation
+-- //
+-- // Author: Diego Perini
+-- // Updated: 2010/12/05
+-- // License: MIT
+-- //
+-- // Copyright (c) 2010-2013 Diego Perini (http://www.iport.it)
+-- //
+-- // Permission is hereby granted, free of charge, to any person
+-- // obtaining a copy of this software and associated documentation
+-- // files (the "Software"), to deal in the Software without
+-- // restriction, including without limitation the rights to use,
+-- // copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- // copies of the Software, and to permit persons to whom the
+-- // Software is furnished to do so, subject to the following
+-- // conditions:
+-- //
+-- // The above copyright notice and this permission notice shall be
+-- // included in all copies or substantial portions of the Software.
+-- //
+-- // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+-- // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+-- // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+-- // NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+-- // HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+-- // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+-- // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+-- // OTHER DEALINGS IN THE SOFTWARE.
+-- //
+-- // the regular expression composed & commented
+-- // could be easily tweaked for RFC compliance,
+-- // it was expressly modified to fit & satisfy
+-- // these test for an URL shortener:
+-- //
+-- //   http://mathiasbynens.be/demo/url-regex
+-- //
+-- // Notes on possible differences from a standard/generic validation:
+-- //
+-- // - utf-8 char class take in consideration the full Unicode range
+-- // - TLDs have been made mandatory so single names like "localhost" fails
+-- // - protocols have been restricted to ftp, http and https only as requested
+-- //
+-- // Changes:
+-- //
+-- // - IP address dotted notation validation, range: 1.0.0.0 - 223.255.255.255
+-- //   first and last IP address of each class is considered invalid
+-- //   (since they are broadcast/network addresses)
+-- //
+-- // - Added exclusion of private, reserved and/or local networks ranges
+-- //
+-- // - Made starting path slash optional (http://example.com?foo=bar)
+-- //
+-- // - Allow a dot (.) at the end of hostnames (http://example.com.)
+/*
+This library consists of functions to validate data against different formats.
+*/
+
+library community.livecode.renegadesystems.rsIsValid
+
+use com.livecode.engine
+use com.livecode.char
+
+metadata title is "rsIsValid"
+metadata author is "Steve MacLean"
+metadata version is "0.1.0"
+
+/*
+Summary: validates the input as a credit card number of Visa, MasterCard, American Express, Discover Card, Diners Club or JCB, then checks to see if it conforms to the mod 10 algorithm.
+Parameters:
+pCreditCard: data to be validated.
+# rsIsValidCC
+Description:
+Returns either the boolean "true" if the credit card is valid or the boolean "false" if it is not. First check the cc number to match with a valid issuer,
+then check the checksum to validate the number
+
+*/
+public handler rsIsValidCC(in pCreditCard as String) returns Boolean
+	variable tMatch as String
+	variable tScript as String
+	variable tResult as Boolean
+	variable tVisaRegex as String
+	variable tMCRegex as String
+	variable tAMEXRegex as String
+	variable tDinersClubRegex as String
+	variable tDiscoverRegex as String
+	variable tJCBRegex as String
+
+	-- setup the regex patterns for different credit cards
+	put "^4[0-9]{12}(?:[0-9]{3})?$" into tVisaRegex
+   put "^5[1-5][0-9]{14}$" into tMCRegex
+   put "^3[47][0-9]{13}$" into tAMEXRegex
+   put "^3(?:0[0-5]|[68][0-9])[0-9]{11}$" into tDinersClubRegex
+   put "^6(?:011|5[0-9]{2})[0-9]{12}$" into tDiscoverRegex
+   put "^(?:2131|1800|35\\d{3})\\d{11}$" into tJCBRegex
+
+	-- build script to execute via the livecode engine
+	-- Remove any non-numeral text such as dashes, spaces or hyphens
+	put "put \q" & pCreditCard & "\q into tCC;put replaceText(tCC, \q[^0-9]+\q, \q\q) into tCC;" into tScript
+	-- run filter against regex patterns and return true if it matches otherwise return empty in tMatch
+	put "filter tCC with regex pattern \q" & tVisaRegex & "\q into tMatch;if tMatch <> empty then return tMatch;" after tScript
+	put "filter tCC with regex pattern \q" & tMCRegex & "\q into tMatch;if tMatch <> empty then return tMatch;" after tScript
+	put "filter tCC with regex pattern \q" & tAMEXRegex & "\q into tMatch;if tMatch <> empty then return tMatch;" after tScript
+	put "filter tCC with regex pattern \q" & tDinersClubRegex & "\q into tMatch;if tMatch <> empty then return tMatch;" after tScript
+	put "filter tCC with regex pattern \q" & tDiscoverRegex & "\q into tMatch;if tMatch <> empty then return tMatch;" after tScript
+	put "filter tCC with regex pattern \q" & tJCBRegex & "\q into tMatch;if tMatch <> empty then return tMatch;" after tScript
+	put "return tMatch" after tScript
+	-- Use 'execute script' for access to regular expressions.
+	execute script tScript
+	put the result into tMatch
+
+	-- Check result
+	if tMatch is empty then
+	  	put false into tResult
+  	else
+	 	put LuhnVal(pCreditCard) into tResult
+  	end if
+
+	return tResult
+	end handler
+
+	private handler LuhnVal(in pCardNumber as String) returns Boolean
+	/*
+	This version of the Luhn algorithm (mod 10)
+	Written by Steve MacLean © 2016
+	This script may be used freely. Please include all comments and the copyright notice.
+	For more information on the Luhn algorithm, please see:
+	https://en.wikipedia.org/wiki/Luhn_algorithm
+	validate credit card checksum - last digit of card number is checksum
+	Double every other digit, minus the checksum digit, from right to left.
+	If the product of the  doubling is > 9, then subtract 9 from the product.
+	Take the sum of all the digits, minus the checksum digit, and multiply by 9 mod 10
+	if the result is the same as the last digit of card number, then the number is valid.
+	Returns true if the number is valid and false if it is not.
+	*/
+	variable tCardNum as any
+	variable tCheckSum as any
+	variable tCheckThis as Boolean
+	variable tCheckDigit as any
+	variable tValDigit as any
+	variable tLen as any
+	variable tScript as String
+	variable tCounter as Integer
+	variable tStart as Integer
+	variable tNum as Number
+
+	put "put \q" & pCardNumber & "\q into tCC;put replaceText(tCC, \q[^0-9]+\q, \q\q) into tCC;return tCC" into tScript
+	execute script tScript
+	put the result into tCardNum
+
+	put the number of chars in tCardNum into tLen
+	put 0 into tCheckSum
+	put true into tCheckThis
+	put the last char of tCardNum parsed as number into tCheckDigit
+	put tLen - 1 into tStart
+
+	repeat with tCounter from tStart down to 1 by -1
+		put (char tCounter of tCardNum) parsed as number into tNum
+		if tCheckThis is true then
+		  if tNum * 2 > 9 then
+			  put ((tNum * 2) - 9) + tCheckSum into tCheckSum
+		  else
+			  put (tNum * 2) + tCheckSum into tCheckSum
+		  end if
+		  put false into tCheckThis
+	  else
+		  put tNum + tCheckSum into tCheckSum
+		  put true into tCheckThis
+	  end if
+	end repeat
+
+	put (tCheckSum * 9) mod 10 into tValDigit
+
+	if tCheckDigit = tValDigit then
+      return true
+   else
+      return false
+   end if
+
+	end handler
+
+/*
+Summary: validates the input as an email address.
+pEmail: data to be validated.
+# rsIsValidEmail
+Description:
+Returns either the boolean "true" if the email is valid or the boolean "false" if it is not.
+Regex Pattern from http://www.regular-expressions.info/email.html
+*/
+public handler rsIsValidEmail(in pEmail as String) returns Boolean
+	variable tMatch as String
+	variable tScript as String
+	variable tResult as Boolean
+	variable tRegex as String
+
+	-- build script to execute via the livecode engine
+	put "^[A-Z0-9._%+-]{1,64}@(?:[A-Z0-9-]{1,63}\\.){1,125}[A-Z]{2,63}$" into tRegex
+	put "filter \q" & pEmail & "\q with regex pattern \q" & tRegex & "\q into tMatch;return tMatch" into tScript
+
+	-- Use 'execute script' for access to regular expressions.
+	execute script tScript
+	put the result into tMatch
+
+	-- Check result
+	if tMatch is empty then
+	  	put false into tResult
+  	else
+	 	put true into tResult
+  	end if
+
+  	return tResult
+	end handler
+
+	/*
+	Summary: validates the input as a number inside the min and max range provided.
+	Parameters:
+	pNumber: the number to validated against the min and max of the range.
+	pMin: the minimum number of the range to validate against.
+	pMax: the maximum number of the range to validate against.
+	# rsIsValidRange
+	Description:
+	Returns either the boolean "true" if the number is within the range provided or the boolean "false" if it is not.
+	*/
+	public handler rsIsValidRange(in pNumber as any, in pMin as any, in pMax as any) returns Boolean
+		variable tResult as Boolean
+		variable tNumber as optional Number
+		variable tMin as optional Number
+		variable tMax as optional Number
+
+		--check pNumber to make sure it's a number. Pass false back and exit if it's not.
+		put pNumber parsed as number into tNumber
+		if tNumber is nothing then
+			return false
+		end if
+
+		--check pMin to make sure it's a number. Pass false back and exit if it's not.
+		put pMin parsed as number into tMin
+		if tMin is nothing then
+			return false
+		end if
+
+		--check pMax to make sure it's a number. Pass false back and exit if it's not.
+		put pMax parsed as number into tMax
+		if tMax is nothing then
+			return false
+		end if
+
+		-- perform range check
+		if tNumber >= tMin and tNumber <= tMax then
+	  		put true into tResult
+  		else
+	  		put false into tResult
+  		end if
+
+		return tResult
+	end handler
+
+	/*
+	Summary: validates the input as US Social Security Number. Doesn't check if the number is real or not.
+	Parameters:
+	pNumber: the number to validated against. Can include dashes.
+	# rsIsValidSSN
+	Description:
+	Returns either the boolean "true" if the SSN is valid or the boolean "false" if it is not.
+	Regex Pattern from http://www.codeproject.com/Articles/651609/Validating-Social-Security-Numbers-through-Regular
+	Will check for:
+	Contains all zeroes in any specific group (ie 000-##-####, ###-00-####, or ###-##-0000)
+	Begins with ’666′
+	Begins with any value from ’900-999′
+	Is equal to ’078-05-1120′  (due to the Woolworth’s Wallet Fiasco)
+	Is equal to ’219-09-9999′ (appeared in an advertisement for the Social Security Administration)
+	and :
+	Contains all matching values (ie 000-00-0000, 111-11-1111, 222-22-2222, etc.)
+	Contains all incrementing values (ie 123-45-6789)
+	The US Social Security Administration has a validation service available at:
+	 https://www.ssa.gov/employer/ssnv.htm?__utma=230172574.1965714354.1377091935.1378827786.1378827801.4&__utmb=230172574.3.9.1378827805567&__utmc=230172574&__utmx=-&__utmz=230172574.1378822344.2.2.utmcsr=en.wikipedia.org%7Cutmccn=(referral)%7Cutmcmd=referral%7Cutmcct=/wiki/Social_Security_number&__utmv=-&__utmk=17956090
+	*/
+	public handler rsIsValidSQLDate(in pSQLDate as String) returns Boolean
+		variable tMatch as String
+		variable tScript as String
+		variable tResult as Boolean
+		variable tRegex as String
+
+		-- setup the regex patterns for US SSN
+		put "((((19|20)([2468][048]|[13579][26]|0[48])|2000)-02-29|((19|20)[0-9]{2}-(0[4678]|1[02])-(0[1-9]|[12][0-9]|30)|(19|20)[0-9]{2}-(0[1359]|11)-(0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}-02-(0[1-9]|1[0-9]|2[0-8])))\\s([01][0-9]|2[0-3]):([012345][0-9]):([012345][0-9]))" into tRegex
+
+		-- build script to execute via the livecode engine
+		put "put \q" & pSQLDate & "\q into tCC;" into tScript
+		-- run filter against regex pattern and return true if it matches otherwise return empty in tMatch
+		put "filter tCC with regex pattern \q" & tRegex & "\q into tMatch;return tMatch;" after tScript
+
+		-- Use 'execute script' for access to regular expressions.
+		execute script tScript
+		put the result into tMatch
+
+		-- Check result
+		if tMatch is empty then
+			put false into tResult
+		else
+			put true into tResult
+		end if
+
+		return tResult
+	end handler
+
+	/*
+	Summary: validates the input as US Social Security Number. Doesn't check if the number is real or not.
+	Parameters:
+	pNumber: the number to validated against. Can include dashes.
+	# rsIsValidSSN
+	Description:
+	Returns either the boolean "true" if the SSN is valid or the boolean "false" if it is not.
+	Function removes any hyphens and tests just the number.
+	Regex Pattern from http://www.codeproject.com/Articles/651609/Validating-Social-Security-Numbers-through-Regular
+   Will check for:
+   Contains all zeroes in any specific group (ie 000-##-####, ###-00-####, or ###-##-0000)
+   Begins with ’666′
+   Begins with any value from ’900-999′
+   Is equal to ’078-05-1120′  (due to the Woolworth’s Wallet Fiasco)
+   Is equal to ’219-09-9999′ (appeared in an advertisement for the Social Security Administration)
+   and :
+   Contains all matching values (ie 000-00-0000, 111-11-1111, 222-22-2222, etc.)
+   Contains all incrementing values (ie 123-45-6789)
+   The US Social Security Administration has a validation service available at:
+    https://www.ssa.gov/employer/ssnv.htm?__utma=230172574.1965714354.1377091935.1378827786.1378827801.4&__utmb=230172574.3.9.1378827805567&__utmc=230172574&__utmx=-&__utmz=230172574.1378822344.2.2.utmcsr=en.wikipedia.org%7Cutmccn=(referral)%7Cutmcmd=referral%7Cutmcct=/wiki/Social_Security_number&__utmv=-&__utmk=17956090
+	*/
+	public handler rsIsValidSSN(in pSSNNumber as String) returns Boolean
+		variable tMatch as String
+		variable tScript as String
+		variable tResult as Boolean
+		variable tRegex as String
+
+		-- setup the regex patterns for US SSN
+		put "^(?!\\b(\\d)\\1+\\b)(?!123456789|219099999|078051120)(?!666|000|9\\d{2})\\d{3}(?!00)\\d{2}(?!0{4})\\d{4}$" into tRegex
+
+		-- build script to execute via the livecode engine
+		-- Remove any non-numeral text such as dashes, spaces or hyphens to test the actual number
+		put "put \q" & pSSNNumber & "\q into tCC;put replaceText(tCC, \q[^0-9]+\q, \q\q) into tCC;" into tScript
+		-- run filter against regex pattern and return true if it matches otherwise return empty in tMatch
+		put "filter tCC with regex pattern \q" & tRegex & "\q into tMatch;return tMatch;" after tScript
+
+		-- Use 'execute script' for access to regular expressions.
+		execute script tScript
+		put the result into tMatch
+
+		-- Check result
+		if tMatch is empty then
+		  	put false into tResult
+	  	else
+		 	put true into tResult
+	  	end if
+
+	  	return tResult
+	end handler
+
+	/*
+	Summary: validates the input as a US telephone number
+	pPhone: data to be validated.
+	# rsIsValidUSPhone
+	Description:
+	Returns either the boolean "true" if the phone number is valid or the boolean "false" if it is not.
+	Regex Pattern from http://www.regexlib.net/REDetails.aspx?regexp_id=607
+   This regular expression for US phone numbers conforms to NANP A-digit
+   and D-digit requirments (ANN-DNN-NNNN). Area Codes 001-199 are not permitted; Central Office Codes 001-199 are not permitted.
+   Format validation accepts 10-digits without delimiters, optional parens on area code, and optional spaces or dashes between area code, central office code and station code.
+   Acceptable formats include 2225551212, 222 555 1212, 222-555-1212, (222) 555 1212, (222) 555-1212, etc.
+	*/
+	public handler rsIsValidUSPhone(in pPhone as String) returns Boolean
+		variable tMatch as String
+		variable tScript as String
+		variable tResult as Boolean
+		variable tRegex as String
+
+		-- build script to execute via the livecode engine
+		put "^(?:\\([2-9]\\d{2}\\)\\ ?|[2-9]\\d{2}(?:\\-?|\\ ?))[2-9]\\d{2}[- ]?\\d{4}$" into tRegex
+		put "filter \q" & pPhone & "\q with regex pattern \q" & tRegex & "\q into tMatch;return tMatch" into tScript
+
+		-- Use 'execute script' for access to regular expressions.
+		execute script tScript
+		put the result into tMatch
+
+		-- Check result
+		if tMatch is empty then
+		  	put false into tResult
+	  	else
+		 	put true into tResult
+	  	end if
+
+	  	return tResult
+		end handler
+
+		/*
+		Summary: validates the input as a URL
+		pPURL: data to be validated.
+		# rsIsValidURL
+		Description:
+		Checks if value is an http, https, ftp, mailto, or news URL. Returns true if the value is or false otherwise.
+		Regex Pattern from http://www.regexlib.net/REDetails.aspx?regexp_id=607
+		*/
+	public handler rsIsValidURL(in pURL as String) returns Boolean
+		variable tMatch as String
+		variable tScript as String
+		variable tResult as Boolean
+		variable tRegex as String
+		variable tSchemeRegex as String
+		variable tScheme as String
+		variable tValid as Boolean
+
+		-- get the scheme of the URL
+		-- build script to execute via the livecode engine
+		put "^(?<scheme>[a-z][a-z0-9+\\-.]*):" into tSchemeRegex
+		put "get matchText(\q" & pURL & "\q,\q" & tSchemeRegex & "\q,tScheme);return tScheme" into tScript
+		-- Use 'execute script' for access to regular expressions.
+		execute script tScript
+		put the result into tScheme
+		-- if there is no scheme then it's invalid
+		if tScheme is empty then
+			return false
+		end if
+
+		if tScheme is "mailto" then
+			delete char 1 to 7 of pURL
+			return rsIsValidEmail(pURL)
+		else
+			-- Test for http, https, ftp, ftps, nntp and news and then see if they are valid.
+			put "^(?:http://|https://|ftp://|ftps://|nntp://|news://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\x{00a1}-\\x{ffff}0-9]-*)*[a-z\\x{00a1}-\\x{ffff}0-9]+)(?:\\.(?:[a-z\\x{00a1}-\\x{ffff}0-9]-*)*[a-z\\x{00a1}-\\x{ffff}0-9]+)*(?:\\.(?:[a-z\\x{00a1}-\\x{ffff}]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$" into tRegex
+			put "filter \q" & pURL & "\q with regex pattern \q" & tRegex & "\q into tMatch;return tMatch" into tScript
+			-- Use 'execute script' for access to regular expressions.
+			execute script tScript
+			put the result into tMatch
+
+			-- Check result
+			if tMatch is empty then
+			  	put false into tResult
+		  	else
+			 	put true into tResult
+		  	end if
+
+		  	return tResult
+		end if
+		-- everything else failed, return false
+		return false
+		end handler
+		-- "^(?:http://|https://|ftp://|ftps://|nntp://|news://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\x{00a1}-\\x{ffff}0-9]-*)*[a-z\\x{00a1}-\\x{ffff}0-9]+)(?:\\.(?:[a-z\\x{00a1}-\\x{ffff}0-9]-*)*[a-z\\x{00a1}-\\x{ffff}0-9]+)*(?:\\.(?:[a-z\\x{00a1}-\\x{ffff}]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$"
+		/*
+		Summary: validates the input as a UUID
+		pPUUID: data to be validated.
+		# rsIsValidUUID
+		Description:
+		Checks if value is a Universally Unique Identifier of the form "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" where ‘ X’ is a hexadecimal. Returns true if the value is or false otherwise.
+		Regex Pattern from http://www.regexlib.net/REDetails.aspx?regexp_id=607
+		This regular expression Matches a Version 4 UUID as described here http://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_.28random.29
+		*/
+	public handler rsIsValidUUID(in pUUID as String) returns Boolean
+		variable tMatch as String
+		variable tScript as String
+		variable tResult as Boolean
+		variable tRegex as String
+
+		-- build script to execute via the livecode engine
+		put "[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}" into tRegex
+		put "filter \q" & pUUID & "\q with regex pattern \q" & tRegex & "\q into tMatch;return tMatch" into tScript
+
+		-- Use 'execute script' for access to regular expressions.
+		execute script tScript
+		put the result into tMatch
+
+		-- Check result
+		if tMatch is empty then
+			put false into tResult
+		else
+			put true into tResult
+		end if
+
+		return tResult
+		end handler
+
+			/*
+		  Summary: validates the input as a US formated date
+		  pDate: data to be validated.
+		  # rsIsValidUSDate
+		  Description:
+		  Checks to see if the value is a US Date of the format mm/dd/yyyy (optional hh:MM(:ss) Datetime for all AD years, including leap years. Returns true if the value is or false otherwise.
+		  Regex Pattern from http://www.regexlib.net/REDetails.aspx?regexp_id=607
+		  */
+	public handler rsIsValidUSDate(in pUSDate as String) returns Boolean
+		variable tMatch as String
+		variable tScript as String
+		variable tResult as Boolean
+		variable tRegex as String
+
+		-- build script to execute via the livecode engine
+		put "(?=\\d)^(?:(?!(?:10\\D(?:0?[5-9]|1[0-4])\\D(?:1582))|(?:0?9\\D(?:0?[3-9]|1[0-3])\\D(?:1752)))((?:0?[13578]|1[02])|(?:0?[469]|11)(?!\\/31)(?!-31)(?!\\.31)|(?:0?2(?=.?(?:(?:29.(?!000[04]|(?:(?:1[^0-6]|[2468][^048]|[3579][^26])00))(?:(?:(?:\\d\\d)(?:[02468][048]|[13579][26])(?!\\x20BC))|(?:00(?:42|3[0369]|2[147]|1[258]|09)\\x20BC))))))|(?:0?2(?=.(?:(?:\\d\\D)|(?:[01]\\d)|(?:2[0-8])))))([-.\\/])(0?[1-9]|[12]\\d|3[01])\\2(?!0000)((?=(?:00(?:4[0-5]|[0-3]?\\d)\\x20BC)|(?:\\d{4}(?!\\x20BC)))\\d{4}(?:\\x20BC)?)(?:$|(?=\\x20\\d)\\x20))?((?:(?:0?[1-9]|1[012])(?::[0-5]\\d){0,2}(?:\\x20[aApP][mM]))|(?:[01]\\d|2[0-3])(?::[0-5]\\d){1,2})?$" into tRegex
+		put "filter \q" & pUSDate & "\q with regex pattern \q" & tRegex & "\q into tMatch;return tMatch" into tScript
+
+		-- Use 'execute script' for access to regular expressions.
+		execute script tScript
+		put the result into tMatch
+
+		-- Check result
+		if tMatch is empty then
+			put false into tResult
+		else
+			put true into tResult
+		end if
+
+		return tResult
+		end handler
+
+		/*
+		Summary: validates the input as a US formated zip code
+		pUSZip: data to be validated.
+		# rsIsValidUSZip
+		Description:
+		Checks to see if the value is a US 5- or 9-digit format ZIP code of the format xxxxx(-xxxx). Returns true if the value is or false otherwise.
+		Regex Pattern from http://www.regexlib.net/REDetails.aspx?regexp_id=607
+		*/
+	public handler rsIsValidUSZip(in pUSZip as String) returns Boolean
+		variable tMatch as String
+		variable tScript as String
+		variable tResult as Boolean
+		variable tRegex as String
+
+		-- build script to execute via the livecode engine
+		put "^(^(?!0{5})(\\d{5})(?!-?0{4})(|-\\d{4})?$)" into tRegex
+		put "filter \q" & pUSZip & "\q with regex pattern \q" & tRegex & "\q into tMatch;return tMatch" into tScript
+
+		-- Use 'execute script' for access to regular expressions.
+		execute script tScript
+		put the result into tMatch
+
+		-- Check result
+		if tMatch is empty then
+			put false into tResult
+		else
+			put true into tResult
+		end if
+
+		return tResult
+		end handler
+end library

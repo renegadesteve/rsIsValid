@@ -1,0 +1,26 @@
+<package version="0.0">
+  <name>community.livecode.renegadesystems.rsIsValid</name>
+  <title>rsIsValid</title>
+  <author>Steve MacLean</author>
+  <version>0.1.0</version>
+  <license>community</license>
+  <type>library</type>
+  <requires name="com.livecode.binary"/>
+  <requires name="com.livecode.string"/>
+  <requires name="com.livecode.engine"/>
+  <requires name="com.livecode.type"/>
+  <requires name="com.livecode.char"/>
+  <requires name="com.livecode.arithmetic"/>
+  <requires name="com.livecode.list"/>
+  <requires name="com.livecode.logic"/>
+  <handler name="rsIsValidCC" parameters="in string" return="boolean"/>
+  <handler name="rsIsValidEmail" parameters="in string" return="boolean"/>
+  <handler name="rsIsValidRange" parameters="in any,in any,in any" return="boolean"/>
+  <handler name="rsIsValidSQLDate" parameters="in string" return="boolean"/>
+  <handler name="rsIsValidSSN" parameters="in string" return="boolean"/>
+  <handler name="rsIsValidUSPhone" parameters="in string" return="boolean"/>
+  <handler name="rsIsValidURL" parameters="in string" return="boolean"/>
+  <handler name="rsIsValidUUID" parameters="in string" return="boolean"/>
+  <handler name="rsIsValidUSDate" parameters="in string" return="boolean"/>
+  <handler name="rsIsValidUSZip" parameters="in string" return="boolean"/>
+</package>
